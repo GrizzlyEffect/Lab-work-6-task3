@@ -7,8 +7,7 @@ namespace Laba_6
 {
     public partial class fMain : Form
     {
-
-        private BindingList<Person> dataSource;
+        private BindingList<PersonBase> dataSource;
 
         public fMain()
         {
@@ -17,7 +16,18 @@ namespace Laba_6
 
         private void btnADD_Click(object sender, EventArgs e)
         {
-            Person data = new Person();
+            var typeSelection = MessageBox.Show(
+                "Чи є ця людина атлетом?", "Вибір типу",
+                MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            PersonBase data = typeSelection switch
+            {
+                DialogResult.Yes => new Athlete(),
+                DialogResult.No => new OverweightPerson(),
+                _ => null
+            };
+
+            if (data == null) return;
 
             fPerson fd = new fPerson(data);
             if (fd.ShowDialog() == DialogResult.OK)
@@ -30,7 +40,7 @@ namespace Laba_6
         {
             if (gvPerson.CurrentRow != null)
             {
-                Person data = (Person)gvPerson.CurrentRow.DataBoundItem;
+                PersonBase data = (PersonBase)gvPerson.CurrentRow.DataBoundItem;
 
                 fPerson fd = new fPerson(data);
                 if (fd.ShowDialog() == DialogResult.OK)
@@ -47,7 +57,7 @@ namespace Laba_6
                 if (MessageBox.Show("Видалити поточний запис?", "Видалення запису",
                     MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
                 {
-                    Person data = (Person)gvPerson.CurrentRow.DataBoundItem;
+                    PersonBase data = (PersonBase)gvPerson.CurrentRow.DataBoundItem;
                     dataSource.Remove(data);
                 }
             }
@@ -123,9 +133,19 @@ namespace Laba_6
             column.Name = "ІМТ";
             gvPerson.Columns.Add(column);
 
-            dataSource = new BindingList<Person>();
+            dataSource = new BindingList<PersonBase>();
 
-            dataSource.Add(new Person("Влад", "Саяпін", "Чоловіча", 20, 72, 1.8, true, false, 22.2));
+            dataSource.Add(new Person
+            {
+                FirstName = "Влад",
+                LastName = "Саяпін",
+                Gender = "Чоловіча",
+                Age = 20,
+                Height = 1.8,
+                Weight = 72,
+                HasAuto = true,
+                HasBike = false
+            });
 
             gvPerson.DataSource = dataSource;
 
@@ -147,12 +167,11 @@ namespace Laba_6
                 sw = new StreamWriter(saveFileDialog.FileName, false, Encoding.UTF8);
                 try
                 {
-                    foreach (Person person in dataSource)
+                    foreach (var person in dataSource)
                     {
-                        sw.Write(person.FirstName + "\t" + person.LastName + "\t" +
-                            person.Gender + "\t" + person.Age + "\t" + person.Height + "\t" + person.Weight + "\t"
-                            + person.HasAuto + "\t" +
-                            person.HasBike + "\t" + person.BMI + "\t\n");
+                        sw.WriteLine($"{person.GetType().Name}\t{person.FirstName}\t{person.LastName}\t" +
+                            $"{person.Gender}\t{person.Age}\t{person.Height}\t{person.Weight}\t" +
+                            $"{person.HasAuto}\t{person.HasBike}\t{person.BMI}");
                     }
                 }
                 catch (Exception ex)
@@ -215,16 +234,32 @@ namespace Laba_6
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                dataSource.Clear(); sr = new StreamReader(openFileDialog.FileName, Encoding.UTF8);
+                dataSource.Clear();
+                sr = new StreamReader(openFileDialog.FileName, Encoding.UTF8);
                 string s;
                 try
                 {
                     while ((s = sr.ReadLine()) != null)
                     {
                         string[] split = s.Split('\t');
-                        Person person = new Person(split[0], split[1], split[2], int.Parse(split[3]),
-                            double.Parse(split[5]), double.Parse(split[4]), bool.Parse(split[6]),
-                            bool.Parse(split[7]), double.Parse(split[8]));
+                        PersonBase person = split[0] switch
+                        {
+                            "Person" => new Person(),
+                            "Athlete" => new Athlete(),
+                            "OverweightPerson" => new OverweightPerson(),
+                            _ => throw new Exception("Невідомий тип даних")
+                        };
+
+                        person.FirstName = split[1];
+                        person.LastName = split[2];
+                        person.Gender = split[3];
+                        person.Age = int.Parse(split[4]);
+                        person.Height = double.Parse(split[5]);
+                        person.Weight = double.Parse(split[6]);
+                        person.HasAuto = bool.Parse(split[7]);
+                        person.HasBike = bool.Parse(split[8]);
+                        person.BMI = person.CalculateBMI();
+
                         dataSource.Add(person);
                     }
                 }
@@ -237,8 +272,6 @@ namespace Laba_6
                 {
                     sr.Close();
                 }
-
-
             }
         }
 
@@ -310,4 +343,3 @@ namespace Laba_6
         }
     }
 }
-

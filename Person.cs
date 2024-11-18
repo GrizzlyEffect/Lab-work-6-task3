@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Laba_6
 {
@@ -42,6 +38,22 @@ namespace Laba_6
             HasAuto = hasAuto;
             HasBike = hasBike;
             BMI = calculateBMI;
+        }
+    }
+
+    public class Athlete : PersonBase
+    {
+        public override double CalculateBMI()
+        {
+            return 0.9 * (Weight / (Height * Height));
+        }
+    }
+
+    public class OverweightPerson : PersonBase
+    {
+        public override double CalculateBMI()
+        {
+            return (Weight / (Height * Height)) * 1.1;
         }
     }
 }
